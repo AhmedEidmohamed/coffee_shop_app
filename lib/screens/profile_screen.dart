@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/auth_cubit.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart';
 import '../providers/profile_provider.dart';
@@ -102,7 +104,8 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                 child: Text(tr('edit_profile')),
               ),
             ),
@@ -232,7 +235,35 @@ class ProfileScreen extends StatelessWidget {
           _buildOptionItem(
             icon: Icons.logout,
             title: tr('logout'),
-            onTap: () {},
+            onTap: () {
+              // sign out and go to login
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(tr('logout')),
+                  content: Text(tr('are_you_sure')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(tr('cancel')),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        // perform sign out
+                        try {
+                          // ignore: use_build_context_synchronously
+                          context.read<AuthCubit>().signOut();
+                        } catch (_) {}
+                        // ignore: use_build_context_synchronously
+                        Navigator.pushReplacementNamed(context, '/login');
+                      },
+                      child: Text(tr('logout')),
+                    ),
+                  ],
+                ),
+              );
+            },
             color: Colors.red,
           ),
         ],

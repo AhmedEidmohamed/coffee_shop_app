@@ -36,6 +36,399 @@ class _HomeScreenState extends State<HomeScreen> {
     await provider.loadCoffees();
   }
 
+  void _addCoffee() {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final priceController = TextEditingController();
+    final imageController = TextEditingController();
+    String selectedCategory = _categories[0];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(
+            tr('add_coffee'),
+            style: const TextStyle(
+              color: Color(0xFF6F4E37),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: tr('name'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.coffee, color: Color(0xFF6F4E37)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('name_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(
+                      labelText: tr('description'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.description,
+                          color: Color(0xFF6F4E37)),
+                    ),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('description_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: priceController,
+                    decoration: InputDecoration(
+                      labelText: tr('price'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.attach_money,
+                          color: Color(0xFF6F4E37)),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('price_required');
+                      }
+                      if (double.tryParse(value) == null) {
+                        return tr('invalid_price');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: imageController,
+                    decoration: InputDecoration(
+                      labelText: tr('image_url'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.image, color: Color(0xFF6F4E37)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('image_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: tr('category'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.category, color: Color(0xFF6F4E37)),
+                    ),
+                    items: _categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCategory = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('category_required');
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final newCoffee = Coffee(
+                    id: '${DateTime.now().millisecondsSinceEpoch}',
+                    name: nameController.text,
+                    description: descriptionController.text,
+                    price: double.parse(priceController.text),
+                    imageUrl: imageController.text,
+                    rating: 4.5,
+                    reviewCount: 100,
+                    category: selectedCategory,
+                  );
+                  final provider =
+                      Provider.of<CoffeeProvider>(context, listen: false);
+                  final success = await provider.addCoffee(newCoffee);
+                  if (success) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(tr('coffee_added'))),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(tr('add_failed'))),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6F4E37),
+                foregroundColor: Colors.white,
+              ),
+              child: Text(tr('add')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editCoffee(Coffee coffee) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: coffee.name);
+    final descriptionController =
+        TextEditingController(text: coffee.description);
+    final priceController =
+        TextEditingController(text: coffee.price.toString());
+    final imageController = TextEditingController(text: coffee.imageUrl);
+    String selectedCategory = coffee.category;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(
+            tr('edit_coffee'),
+            style: const TextStyle(
+              color: Color(0xFF6F4E37),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: tr('name'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.coffee, color: Color(0xFF6F4E37)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('name_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(
+                      labelText: tr('description'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.description,
+                          color: Color(0xFF6F4E37)),
+                    ),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('description_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: priceController,
+                    decoration: InputDecoration(
+                      labelText: tr('price'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.attach_money,
+                          color: Color(0xFF6F4E37)),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('price_required');
+                      }
+                      if (double.tryParse(value) == null) {
+                        return tr('invalid_price');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: imageController,  
+                    decoration: InputDecoration(
+                      labelText: tr('image_url'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.image, color: Color(0xFF6F4E37)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('image_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: tr('category'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.category, color: Color(0xFF6F4E37)),
+                    ),
+                    items: _categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCategory = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('category_required');
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final updatedCoffee = coffee.copyWith(
+                    name: nameController.text,
+                    description: descriptionController.text,
+                    price: double.parse(priceController.text),
+                    imageUrl: imageController.text,
+                    category: selectedCategory,
+                  );
+                  final provider =
+                      Provider.of<CoffeeProvider>(context, listen: false);
+                  final success =
+                      await provider.updateCoffee(coffee.id, updatedCoffee);
+                  if (success) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(tr('coffee_updated'))),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(tr('update_failed'))),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6F4E37),
+                foregroundColor: Colors.white,
+              ),
+              child: Text(tr('save')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deleteCoffee(Coffee coffee) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('delete_coffee')),
+        content: Text(tr('confirm_delete')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final provider =
+                  Provider.of<CoffeeProvider>(context, listen: false);
+              final success = await provider.deleteCoffee(coffee.id);
+              Navigator.of(context).pop();
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(tr('coffee_deleted'))),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(tr('delete_failed'))),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(tr('delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,6 +472,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addCoffee,
+        backgroundColor: const Color(0xFF6F4E37),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -460,26 +858,44 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '\$${coffee.price.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: Color(0xFF6F4E37),
+                              Flexible(
+                                child: Text(
+                                  '\$${coffee.price.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: Color(0xFF6F4E37),
+                                  ),
                                 ),
                               ),
-                              Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF6F4E37),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => _editCoffee(coffee),
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Icon(Icons.edit, size: 20),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => _deleteCoffee(coffee),
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Icon(Icons.delete,
+                                          size: 20, color: Colors.red),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
