@@ -20,6 +20,15 @@ dependencies:
   connectivity_plus: ^5.0.2  # إضافة للحصول على حالة الاتصال
   image_picker: ^1.1.2
 
+  # Firebase & Auth
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+
+  # State management
+  flutter_bloc: ^8.1.2
+  bloc: ^8.1.0
+  equatable: ^2.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

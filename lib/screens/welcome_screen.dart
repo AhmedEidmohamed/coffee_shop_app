@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'main_screen.dart';
+import 'login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -45,7 +45,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // المحتوى العلوي
           Column(
             children: [
@@ -80,7 +80,8 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Welcome to our Coffee corner, where every cup is a delightful moment for you.'.tr(),
+                        'Welcome to our Coffee corner, where every cup is a delightful moment for you.'
+                            .tr(),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 14,
@@ -94,12 +95,11 @@ class WelcomeScreen extends StatelessWidget {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.pushAndRemoveUntil(
+                            Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const MainScreen(),
+                                builder: (context) => const LoginScreen(),
                               ),
-                              (route) => false,
                             );
                           },
                           style: ElevatedButton.styleFrom(

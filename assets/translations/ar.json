@@ -59,6 +59,8 @@
   "Order ID:": "رقم الطلب:",
   "Reorder": "إعادة الطلب",
   "Cancel": "إلغاء",
+  "cancel": "إلغاء",
+  "are_you_sure": "هل أنت متأكد؟",
   "Cancel Order?": "هل تريد إلغاء هذا الطلب؟",
   "Are you sure you want to cancel this order?": "هل أنت متأكد أنك تريد إلغاء هذا الطلب؟",
   "No": "لا",
