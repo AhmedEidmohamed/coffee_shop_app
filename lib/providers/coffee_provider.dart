@@ -10,7 +10,7 @@ class CoffeeProvider with ChangeNotifier {
   List<Order> _orders = [];
   bool _isLoading = false;
   String _error = '';
-  
+
   // مفاتيح التخزين المحلي
   static const String _ordersKey = 'coffee_shop_orders';
   static const String _favoritesKey = 'coffee_shop_favorites';
@@ -19,9 +19,10 @@ class CoffeeProvider with ChangeNotifier {
   List<Order> get orders => _orders;
   bool get isLoading => _isLoading;
   String get error => _error;
-  
+
   // الحصول على القهوة المفضلة
-  List<Coffee> get favorites => _coffees.where((coffee) => coffee.isFavorite).toList();
+  List<Coffee> get favorites =>
+      _coffees.where((coffee) => coffee.isFavorite).toList();
 
   CoffeeProvider() {
     _loadOrders(); // تحميل الطلبات عند إنشاء المزود
@@ -50,6 +51,53 @@ class CoffeeProvider with ChangeNotifier {
     await loadCoffees();
   }
 
+  // Add method to update a coffee
+  Future<bool> updateCoffee(String id, Coffee updatedCoffee) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final success = await _apiService.updateCoffee(id, updatedCoffee);
+      if (success) {
+        final index = _coffees.indexWhere((coffee) => coffee.id == id);
+        if (index != -1) {
+          _coffees[index] = updatedCoffee;
+        }
+        _error = '';
+      } else {
+        _error = 'Failed to update coffee';
+      }
+      return success;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Add method to delete a coffee
+  Future<bool> deleteCoffee(String id) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final success = await _apiService.deleteCoffee(id);
+      if (success) {
+        _coffees.removeWhere((coffee) => coffee.id == id);
+        _error = '';
+      } else {
+        _error = 'Failed to delete coffee';
+      }
+      return success;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Coffee getCoffeeById(String id) {
     return _coffees.firstWhere(
       (coffee) => coffee.id == id,
@@ -73,7 +121,7 @@ class CoffeeProvider with ChangeNotifier {
   }
 
   // ========== المفضلة ==========
-  
+
   // تبديل حالة المفضلة
   void toggleFavorite(String coffeeId) {
     final index = _coffees.indexWhere((coffee) => coffee.id == coffeeId);
@@ -107,7 +155,8 @@ class CoffeeProvider with ChangeNotifier {
   Future<void> _saveFavorites() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final favoriteIds = _coffees.where((c) => c.isFavorite).map((c) => c.id).toList();
+      final favoriteIds =
+          _coffees.where((c) => c.isFavorite).map((c) => c.id).toList();
       await prefs.setStringList(_favoritesKey, favoriteIds);
     } catch (e) {
       print('Error saving favorites: $e');
@@ -119,7 +168,7 @@ class CoffeeProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final favoriteIds = prefs.getStringList(_favoritesKey) ?? [];
-      
+
       // تحديث حالة المفضلة للقهوة
       for (var coffee in _coffees) {
         coffee.isFavorite = favoriteIds.contains(coffee.id);
@@ -134,7 +183,7 @@ class CoffeeProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_favoritesKey);
-      
+
       // إزالة المفضلة من جميع القهوة
       for (var coffee in _coffees) {
         coffee.isFavorite = false;
@@ -187,20 +236,24 @@ class CoffeeProvider with ChangeNotifier {
 
   // الحصول على إجمالي المبيعات
   double get totalSales {
-    return _orders.fold(0.0, (sum, order) => sum + (order.price * order.quantity));
+    return _orders.fold(
+        0.0, (sum, order) => sum + (order.price * order.quantity));
   }
 
   // تصفية الطلبات حسب الحالة
   List<Order> getOrdersByStatus(String status) {
-    return _orders.where((order) => order.status.toLowerCase() == status.toLowerCase()).toList();
+    return _orders
+        .where((order) => order.status.toLowerCase() == status.toLowerCase())
+        .toList();
   }
 
   // الحصول على الطلبات النشطة (ليست ملغاة أو منتهية)
   List<Order> get activeOrders {
-    return _orders.where((order) => 
-      order.status.toLowerCase() != 'cancelled' && 
-      order.status.toLowerCase() != 'completed'
-    ).toList();
+    return _orders
+        .where((order) =>
+            order.status.toLowerCase() != 'cancelled' &&
+            order.status.toLowerCase() != 'completed')
+        .toList();
   }
 
   // إنشاء طلب جديد من بيانات القهوة
@@ -239,7 +292,7 @@ class CoffeeProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final ordersJson = prefs.getString(_ordersKey);
-      
+
       if (ordersJson != null) {
         final List<dynamic> ordersList = json.decode(ordersJson);
         _orders = ordersList.map((json) => Order.fromJson(json)).toList();
@@ -260,12 +313,12 @@ class CoffeeProvider with ChangeNotifier {
   // البحث في الطلبات
   List<Order> searchOrders(String query) {
     if (query.isEmpty) return _orders;
-    
+
     final lowercaseQuery = query.toLowerCase();
     return _orders.where((order) {
       return order.coffeeName.toLowerCase().contains(lowercaseQuery) ||
-             order.id.toLowerCase().contains(lowercaseQuery) ||
-             order.status.toLowerCase().contains(lowercaseQuery);
+          order.id.toLowerCase().contains(lowercaseQuery) ||
+          order.status.toLowerCase().contains(lowercaseQuery);
     }).toList();
   }
 
@@ -311,20 +364,21 @@ class CoffeeProvider with ChangeNotifier {
   List<Order> get ordersThisMonth {
     final now = DateTime.now();
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
-    
-    return _orders.where((order) => 
-      order.orderDate.isAfter(firstDayOfMonth)
-    ).toList();
+
+    return _orders
+        .where((order) => order.orderDate.isAfter(firstDayOfMonth))
+        .toList();
   }
 
   // الحصول على الطلبات الشائعة
   Map<String, int> get popularOrders {
     final coffeeCount = <String, int>{};
-    
+
     for (final order in _orders) {
-      coffeeCount[order.coffeeName] = (coffeeCount[order.coffeeName] ?? 0) + order.quantity;
+      coffeeCount[order.coffeeName] =
+          (coffeeCount[order.coffeeName] ?? 0) + order.quantity;
     }
-    
+
     return coffeeCount;
   }
 
@@ -334,4 +388,6 @@ class CoffeeProvider with ChangeNotifier {
     _saveOrders();
     notifyListeners();
   }
+
+  addCoffee(Coffee newCoffee) {}
 }

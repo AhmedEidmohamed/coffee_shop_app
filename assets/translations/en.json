@@ -59,6 +59,8 @@
   "Order ID:": "Order ID:",
   "Reorder": "Reorder",
   "Cancel": "Cancel",
+  "cancel": "Cancel",
+  "are_you_sure": "Are you sure?",
   "Cancel Order?": "Cancel Order?",
   "Are you sure you want to cancel this order?": "Are you sure you want to cancel this order?",
   "No": "No",

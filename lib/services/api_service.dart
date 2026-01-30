@@ -43,6 +43,85 @@ class ApiService {
     }
   }
 
+  // Add method to add a new coffee
+  Future<Coffee?> addCoffee(Coffee newCoffee) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_coffeeApiUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'title': newCoffee.name,
+              'description': newCoffee.description,
+              'price': newCoffee.price,
+              'image': newCoffee.imageUrl,
+              // Add other fields as needed
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return Coffee(
+          id: json['id']?.toString() ??
+              '${DateTime.now().millisecondsSinceEpoch}',
+          name: json['title'] ?? newCoffee.name,
+          description: json['description'] ?? newCoffee.description,
+          price: (json['price'] as num?)?.toDouble() ?? newCoffee.price,
+          imageUrl: json['image'] ?? newCoffee.imageUrl,
+          rating: 4.5,
+          reviewCount: 100,
+          category: 'All Coffee',
+        );
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error adding coffee: $e');
+      return null;
+    }
+  }
+
+  // Add method to update a coffee
+  Future<bool> updateCoffee(String id, Coffee updatedCoffee) async {
+    try {
+      final response = await http
+          .put(
+            Uri.parse('$_coffeeApiUrl/$id'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'title': updatedCoffee.name,
+              'description': updatedCoffee.description,
+              'price': updatedCoffee.price,
+              'image': updatedCoffee.imageUrl,
+              // Add other fields as needed, assuming API supports them
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error updating coffee: $e');
+      return false;
+    }
+  }
+
+  // Add method to delete a coffee
+  Future<bool> deleteCoffee(String id) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$_coffeeApiUrl/$id'),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      print('Error deleting coffee: $e');
+      return false;
+    }
+  }
+
   List<Coffee> _getDefaultCoffees() {
     return [
       Coffee(

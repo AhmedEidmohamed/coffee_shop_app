@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../providers/coffee_provider.dart';
-import '../models/coffee_model.dart';
 import 'detail_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
