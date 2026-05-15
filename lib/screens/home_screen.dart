@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/auth_cubit.dart';
 import '../providers/coffee_provider.dart';
 import '../models/coffee_model.dart';
 import 'detail_screen.dart';
+import 'admin_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -473,11 +476,13 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addCoffee,
-        backgroundColor: const Color(0xFF6F4E37),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: (context.read<AuthCubit>().state.user?.isAdmin ?? false)
+          ? FloatingActionButton(
+              onPressed: _addCoffee,
+              backgroundColor: const Color(0xFF6F4E37),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
@@ -586,6 +591,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       actions: [
+        if (context.read<AuthCubit>().state.user?.isAdmin ?? false)
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings, color: Color(0xFF6F4E37)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+              );
+            },
+          ),
         IconButton(
           icon: const Icon(Icons.notifications_none),
           onPressed: () {},
@@ -828,29 +843,35 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            coffee.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color:
-                                  Theme.of(context).textTheme.bodyLarge?.color,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(Icons.star,
-                                  color: Colors.amber, size: 16),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${coffee.rating} (${coffee.reviewCount})',
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
+                              Expanded(
+                                child: Text(
+                                  coffee.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color:
+                                        Theme.of(context).textTheme.bodyLarge?.color,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star,
+                                      color: Colors.amber, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${coffee.rating}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -858,45 +879,57 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  '\$${coffee.price.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Color(0xFF6F4E37),
-                                  ),
-                                ),
-                              ),
                               Row(
                                 children: [
-                                  GestureDetector(
-                                    onTap: () => _editCoffee(coffee),
-                                    child: Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: const Icon(Icons.edit, size: 20),
+                                  Text(
+                                    'Price',
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () => _deleteCoffee(coffee),
-                                    child: Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: const Icon(Icons.delete,
-                                          size: 20, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '\$${coffee.price.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Color(0xFF6F4E37),
                                     ),
                                   ),
                                 ],
                               ),
+                              if (context.read<AuthCubit>().state.user?.isAdmin ?? false)
+                                Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => _editCoffee(coffee),
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: const Icon(Icons.edit, size: 20),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => _deleteCoffee(coffee),
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: const Icon(Icons.delete,
+                                            size: 20, color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
                         ],

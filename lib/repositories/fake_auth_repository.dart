@@ -28,9 +28,16 @@ class FakeAuthRepository implements BaseAuthRepository {
   Future<AppUser?> signIn(
       {required String email, required String password}) async {
     await Future.delayed(const Duration(seconds: 1));
-    // For fake, accept any credentials
+    
+    // تأمين حساب الإدمن بكلمة مرور محددة
+    if (email == 'admin@admin.com' && password != 'admin123') {
+      throw Exception('كلمة المرور الخاصة بالمدير غير صحيحة. استخدم admin123');
+    }
+
+    // For fake, accept any other credentials
+    final role = (email == 'admin@admin.com') ? 'admin' : 'user';
     _user = AppUser(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), email: email);
+        id: DateTime.now().millisecondsSinceEpoch.toString(), email: email, role: role);
     _controller.add(_user);
     return _user;
   }

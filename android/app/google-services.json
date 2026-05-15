@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "772515931818",
+    "project_id": "ahmed-64133",
+    "storage_bucket": "ahmed-64133.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772515931818:android:339ee1582642cceb78d2d3",
+        "android_client_info": {
+          "package_name": "com.example.coffee_shop_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCefYERv4iykWPUs4RCaSppCmjNQTFz0To"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772515931818:android:0bb5c73588cbfcdd78d2d3",
+        "android_client_info": {
+          "package_name": "com.example.rafiqapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCefYERv4iykWPUs4RCaSppCmjNQTFz0To"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_service.dart';
+import '../services/firestore_coffee_service.dart';
+import '../services/firestore_order_service.dart';
 import '../models/coffee_model.dart';
 
 class CoffeeProvider with ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final FirestoreCoffeeService _coffeeService = FirestoreCoffeeService();
+  final FirestoreOrderService _orderService = FirestoreOrderService();
   List<Coffee> _coffees = [];
   List<Order> _orders = [];
   bool _isLoading = false;
@@ -35,7 +37,7 @@ class CoffeeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _coffees = await _apiService.getCoffees();
+      _coffees = await _coffeeService.getCoffees();
       // بعد تحميل القهوة، نقوم بتحميل المفضلة
       await _loadFavorites();
       _error = '';
@@ -56,7 +58,7 @@ class CoffeeProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final success = await _apiService.updateCoffee(id, updatedCoffee);
+      final success = await _coffeeService.updateCoffee(id, updatedCoffee);
       if (success) {
         final index = _coffees.indexWhere((coffee) => coffee.id == id);
         if (index != -1) {
@@ -81,7 +83,7 @@ class CoffeeProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final success = await _apiService.deleteCoffee(id);
+      final success = await _coffeeService.deleteCoffee(id);
       if (success) {
         _coffees.removeWhere((coffee) => coffee.id == id);
         _error = '';
@@ -197,37 +199,43 @@ class CoffeeProvider with ChangeNotifier {
   // ========== الطلبات ==========
 
   // إضافة طلب جديد
-  void addOrder(Order order) {
-    _orders.insert(0, order);
-    _saveOrders();
-    notifyListeners();
+  Future<void> addOrder(Order order) async {
+    final addedOrder = await _orderService.addOrder(order);
+    if (addedOrder != null) {
+      _orders.insert(0, addedOrder);
+      notifyListeners();
+    }
   }
 
   // حذف طلب
-  void removeOrder(String orderId) {
-    _orders.removeWhere((order) => order.id == orderId);
-    _saveOrders();
-    notifyListeners();
+  Future<void> removeOrder(String orderId) async {
+    final success = await _orderService.deleteOrder(orderId);
+    if (success) {
+      _orders.removeWhere((order) => order.id == orderId);
+      notifyListeners();
+    }
   }
 
   // تحديث حالة الطلب
-  void updateOrderStatus(String orderId, String newStatus) {
-    final index = _orders.indexWhere((order) => order.id == orderId);
-    if (index != -1) {
-      final updatedOrder = Order(
-        id: _orders[index].id,
-        coffeeName: _orders[index].coffeeName,
-        coffeeImage: _orders[index].coffeeImage,
-        price: _orders[index].price,
-        quantity: _orders[index].quantity,
-        size: _orders[index].size,
-        isDairyFree: _orders[index].isDairyFree,
-        orderDate: _orders[index].orderDate,
-        status: newStatus,
-      );
-      _orders[index] = updatedOrder;
-      _saveOrders();
-      notifyListeners();
+  Future<void> updateOrderStatus(String orderId, String newStatus) async {
+    final success = await _orderService.updateOrderStatus(orderId, newStatus);
+    if (success) {
+      final index = _orders.indexWhere((order) => order.id == orderId);
+      if (index != -1) {
+        final updatedOrder = Order(
+          id: _orders[index].id,
+          coffeeName: _orders[index].coffeeName,
+          coffeeImage: _orders[index].coffeeImage,
+          price: _orders[index].price,
+          quantity: _orders[index].quantity,
+          size: _orders[index].size,
+          isDairyFree: _orders[index].isDairyFree,
+          orderDate: _orders[index].orderDate,
+          status: newStatus,
+        );
+        _orders[index] = updatedOrder;
+        notifyListeners();
+      }
     }
   }
 
@@ -276,28 +284,11 @@ class CoffeeProvider with ChangeNotifier {
     );
   }
 
-  // حفظ الطلبات في SharedPreferences
-  Future<void> _saveOrders() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final ordersJson = _orders.map((order) => order.toJson()).toList();
-      await prefs.setString(_ordersKey, json.encode(ordersJson));
-    } catch (e) {
-      print('Error saving orders: $e');
-    }
-  }
-
-  // تحميل الطلبات من SharedPreferences
+  // تحميل الطلبات من Firestore
   Future<void> _loadOrders() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final ordersJson = prefs.getString(_ordersKey);
-
-      if (ordersJson != null) {
-        final List<dynamic> ordersList = json.decode(ordersJson);
-        _orders = ordersList.map((json) => Order.fromJson(json)).toList();
-        notifyListeners();
-      }
+      _orders = await _orderService.getOrders();
+      notifyListeners();
     } catch (e) {
       print('Error loading orders: $e');
     }
@@ -305,9 +296,9 @@ class CoffeeProvider with ChangeNotifier {
 
   // مسح جميع الطلبات
   Future<void> clearAllOrders() async {
-    _orders.clear();
-    await _saveOrders();
-    notifyListeners();
+    for (var order in List.from(_orders)) {
+      await removeOrder(order.id);
+    }
   }
 
   // البحث في الطلبات
@@ -355,7 +346,7 @@ class CoffeeProvider with ChangeNotifier {
       size: order.size,
       isDairyFree: order.isDairyFree,
       orderDate: DateTime.now(),
-      status: 'Processing',
+      status: 'Pending',
     );
     addOrder(newOrder);
   }
@@ -383,11 +374,32 @@ class CoffeeProvider with ChangeNotifier {
   }
 
   // مسح الطلبات الملغية
-  void clearCancelledOrders() {
-    _orders.removeWhere((order) => order.status.toLowerCase() == 'cancelled');
-    _saveOrders();
-    notifyListeners();
+  Future<void> clearCancelledOrders() async {
+    final cancelledOrders = _orders.where((order) => order.status.toLowerCase() == 'cancelled').toList();
+    for (var order in cancelledOrders) {
+      await removeOrder(order.id);
+    }
   }
 
-  addCoffee(Coffee newCoffee) {}
+  Future<bool> addCoffee(Coffee newCoffee) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final addedCoffee = await _coffeeService.addCoffee(newCoffee);
+      if (addedCoffee != null) {
+        _coffees.add(addedCoffee);
+        _error = '';
+        return true;
+      } else {
+        _error = 'Failed to add coffee';
+        return false;
+      }
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

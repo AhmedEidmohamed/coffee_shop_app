@@ -68,5 +68,14 @@
   "Mark as Preparing": "تحديد كـ قيد التحضير",
   "reordered successfully": "تمت إعادة الطلب بنجاح",
   "Order cancelled successfully": "تم إلغاء الطلب بنجاح",
-  "Order status updated to Preparing": "تم تحديث حالة الطلب إلى قيد التحضير"
+  "Order status updated to Preparing": "تم تحديث حالة الطلب إلى قيد التحضير",
+  "Fall in Love with\nCoffee in Blissful Delight": "قع في حب\nالقهوة في متعة سعيدة",
+  "Welcome to our Coffee corner, where every cup is a delightful moment for you.": "مرحبًا بك في ركن القهوة، حيث كل كوب هو لحظة ممتعة لك.",
+  "Get Started": "ابدأ الآن",
+  "add_coffee": "إضافة قهوة",
+  "image_url": "رابط الصورة",
+  "image_required": "رابط الصورة مطلوب",
+  "add_failed": "فشل إضافة القهوة",
+  "category": "الفئة",
+  "add": "إضافة"
 }

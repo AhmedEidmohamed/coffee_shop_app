@@ -35,6 +35,7 @@ class AuthRepository implements BaseAuthRepository {
 
   AppUser? _fromFirebaseUser(User? user) {
     if (user == null) return null;
-    return AppUser(id: user.uid, email: user.email);
+    final role = (user.email == 'admin@admin.com') ? 'admin' : 'user';
+    return AppUser(id: user.uid, email: user.email, role: role);
   }
 }

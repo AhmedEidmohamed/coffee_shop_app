@@ -21,17 +21,26 @@ class ApiService {
         }
 
         return data.map((json) {
+          final id = json['id']?.toString() ?? '${DateTime.now().millisecondsSinceEpoch}';
+          final title = json['title'] ?? json['name'] ?? 'Coffee';
+          
+          String category = 'Latte';
+          final lowerTitle = title.toString().toLowerCase();
+          if (lowerTitle.contains('machisto') || lowerTitle.contains('mocha')) category = 'Machisto';
+          else if (lowerTitle.contains('americano') || lowerTitle.contains('espresso') || lowerTitle.contains('black')) category = 'Americano';
+          else if (lowerTitle.contains('latte') || lowerTitle.contains('cappuccino')) category = 'Latte';
+          else category = ['Machisto', 'Latte', 'Americano'][id.hashCode % 3];
+
           return Coffee(
-            id: json['id']?.toString() ??
-                '${DateTime.now().millisecondsSinceEpoch}',
-            name: json['title'] ?? json['name'] ?? 'Coffee',
+            id: id,
+            name: title,
             description: json['description'] ?? 'Delicious coffee drink',
             price: (json['price'] as num?)?.toDouble() ?? 3.99,
             imageUrl: json['image'] ??
                 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400',
             rating: 4.5,
             reviewCount: 100,
-            category: 'All Coffee',
+            category: category,
           );
         }).toList();
       } else {
@@ -126,7 +135,7 @@ class ApiService {
     return [
       Coffee(
         id: '1',
-        name: 'Caffe Mocha',
+        name: 'Machisto',
         description:
             'A delightful blend of espresso, chocolate, and steamed milk',
         price: 4.53,
@@ -134,22 +143,22 @@ class ApiService {
             'https://images.unsplash.com/photo-1568649929103-28ffbefaca1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
         rating: 4.8,
         reviewCount: 2500,
-        category: 'All Coffee',
+        category: 'Machisto',
       ),
       Coffee(
         id: '2',
-        name: 'Flat White',
+        name: 'Latte',
         description: 'Smooth espresso with velvety microfoam',
         price: 3.53,
         imageUrl:
             'https://images.unsplash.com/photo-1517701604599-bb29b565090c?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
         rating: 4.5,
         reviewCount: 1800,
-        category: 'All Coffee',
+        category: 'Latte',
       ),
       Coffee(
         id: '3',
-        name: 'Espresso',
+        name: 'Americano',
         description:
             'Strong black coffee made by forcing steam through ground coffee beans',
         price: 2.50,
@@ -157,7 +166,7 @@ class ApiService {
             'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
         rating: 4.7,
         reviewCount: 3200,
-        category: 'All Coffee',
+        category: 'Americano',
       ),
       Coffee(
         id: '4',
@@ -168,7 +177,7 @@ class ApiService {
             'https://images.unsplash.com/photo-1572442388796-11668a67e53d?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
         rating: 4.6,
         reviewCount: 2100,
-        category: 'All Coffee',
+        category: 'Latte',
       ),
     ];
   }

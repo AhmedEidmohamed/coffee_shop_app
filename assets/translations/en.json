@@ -68,5 +68,14 @@
   "Mark as Preparing": "Mark as Preparing",
   "reordered successfully": "reordered successfully",
   "Order cancelled successfully": "Order cancelled successfully",
-  "Order status updated to Preparing": "Order status updated to Preparing"
+  "Order status updated to Preparing": "Order status updated to Preparing",
+  "Fall in Love with\nCoffee in Blissful Delight": "Fall in Love with\nCoffee in Blissful Delight",
+  "Welcome to our Coffee corner, where every cup is a delightful moment for you.": "Welcome to our Coffee corner, where every cup is a delightful moment for you.",
+  "Get Started": "Get Started",
+  "add_coffee": "Add Coffee",
+  "image_url": "Image URL",
+  "image_required": "Image URL is required",
+  "add_failed": "Failed to add coffee",
+  "category": "Category",
+  "add": "Add"
 }
