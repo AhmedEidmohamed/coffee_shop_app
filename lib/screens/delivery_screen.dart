@@ -1,11 +1,13 @@
-import 'package:coffee_shop_app/providers/coffee_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../models/coffee_model.dart';
+import '../providers/coffee_provider.dart';
 import 'order_confirmation_screen.dart';
 
-class DeliveryScreen extends StatelessWidget {
+class DeliveryScreen extends StatefulWidget {
   final Coffee coffee;
   final String size;
   final int quantity;
@@ -20,10 +22,71 @@ class DeliveryScreen extends StatelessWidget {
   });
 
   @override
+  State<DeliveryScreen> createState() => _DeliveryScreenState();
+}
+
+class _DeliveryScreenState extends State<DeliveryScreen> {
+  String _address = 'Jl. Keg Sutoyo\nKeg, Sutoyo Plus 600, Bitsen, Tanjungbaiu.';
+  bool _isLoadingAddress = false;
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingAddress = true;
+    });
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception(tr('location_disabled'));
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception(tr('location_denied'));
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception(tr('location_permanently_denied'));
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        setState(() {
+          _address = '${place.street}\n${place.subLocality}, ${place.locality}, ${place.country}';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAddress = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final double deliveryFee = 2.0;
-    final double coffeePrice = coffee.price * quantity;
-    final double dairyFreeExtra = isDairyFree ? 0.50 * quantity : 0;
+    final double coffeePrice = widget.coffee.price * widget.quantity;
+    final double dairyFreeExtra = widget.isDairyFree ? 0.50 * widget.quantity : 0;
     final double total = coffeePrice + deliveryFee + dairyFreeExtra;
 
     return Scaffold(
@@ -86,9 +149,9 @@ class DeliveryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Jl. Keg Sutoyo\nKeg, Sutoyo Plus 600, Bitsen, Tanjungbaiu.',
-            style: TextStyle(
+          Text(
+            _address,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -96,16 +159,29 @@ class DeliveryScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              child: Text(
-                tr('edit_address'),
-                style: const TextStyle(
-                  color: Color(0xFF6F4E37),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            child: _isLoadingAddress
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : TextButton(
+                    onPressed: _getCurrentLocation,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.my_location, size: 16, color: Color(0xFF6F4E37)),
+                        const SizedBox(width: 4),
+                        Text(
+                          tr('edit_address'),
+                          style: const TextStyle(
+                            color: Color(0xFF6F4E37),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -127,7 +203,7 @@ class DeliveryScreen extends StatelessWidget {
         const SizedBox(height: 20),
         _buildSummaryRow(tr('price'), '\$${coffeePrice.toStringAsFixed(2)}'),
         const SizedBox(height: 10),
-        if (isDairyFree)
+        if (widget.isDairyFree)
           Column(
             children: [
               _buildSummaryRow(
@@ -231,24 +307,21 @@ class DeliveryScreen extends StatelessWidget {
       height: 50,
       child: ElevatedButton(
         onPressed: () {
-          // إنشاء الطلب باستخدام Provider
           final order =
               Provider.of<CoffeeProvider>(context, listen: false).createOrder(
-            coffee: coffee,
-            size: size,
-            quantity: quantity,
-            isDairyFree: isDairyFree,
+            coffee: widget.coffee,
+            size: widget.size,
+            quantity: widget.quantity,
+            isDairyFree: widget.isDairyFree,
           );
 
-          // إضافة الطلب
           Provider.of<CoffeeProvider>(context, listen: false).addOrder(order);
 
-          // الانتقال لشاشة التأكيد
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => OrderConfirmationScreen(
-                coffee: coffee,
+                coffee: widget.coffee,
                 total: total,
                 order: order,
               ),
@@ -267,6 +340,7 @@ class DeliveryScreen extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
       ),

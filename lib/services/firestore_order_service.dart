@@ -19,7 +19,7 @@ class FirestoreOrderService {
     try {
       final snapshot = await _firestore!.collection('orders').orderBy('orderDate', descending: true).get();
       return snapshot.docs.map((doc) {
-        final data = doc.data();
+        final data = Map<String, dynamic>.from(doc.data());
         data['id'] = doc.id; // overwrite id with document id
         return Order.fromJson(data);
       }).toList();

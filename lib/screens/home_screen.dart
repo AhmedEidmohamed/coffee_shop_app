@@ -8,6 +8,7 @@ import '../providers/coffee_provider.dart';
 import '../models/coffee_model.dart';
 import 'detail_screen.dart';
 import 'admin_dashboard_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,12 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategory = 0;
-  final List<String> _categories = [
-    'All Coffee',
-    'Machisto',
-    'Latte',
-    'Americano'
-  ];
+  List<String> _categories = ['All Coffee'];
   String _searchQuery = '';
 
   @override
@@ -39,184 +35,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await provider.loadCoffees();
   }
 
-  void _addCoffee() {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final priceController = TextEditingController();
-    final imageController = TextEditingController();
-    String selectedCategory = _categories[0];
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(
-            tr('add_coffee'),
-            style: const TextStyle(
-              color: Color(0xFF6F4E37),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: tr('name'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon:
-                          const Icon(Icons.coffee, color: Color(0xFF6F4E37)),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return tr('name_required');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: descriptionController,
-                    decoration: InputDecoration(
-                      labelText: tr('description'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.description,
-                          color: Color(0xFF6F4E37)),
-                    ),
-                    maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return tr('description_required');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: priceController,
-                    decoration: InputDecoration(
-                      labelText: tr('price'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.attach_money,
-                          color: Color(0xFF6F4E37)),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return tr('price_required');
-                      }
-                      if (double.tryParse(value) == null) {
-                        return tr('invalid_price');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: imageController,
-                    decoration: InputDecoration(
-                      labelText: tr('image_url'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon:
-                          const Icon(Icons.image, color: Color(0xFF6F4E37)),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return tr('image_required');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: tr('category'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon:
-                          const Icon(Icons.category, color: Color(0xFF6F4E37)),
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedCategory = value!;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return tr('category_required');
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(tr('cancel')),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final newCoffee = Coffee(
-                    id: '${DateTime.now().millisecondsSinceEpoch}',
-                    name: nameController.text,
-                    description: descriptionController.text,
-                    price: double.parse(priceController.text),
-                    imageUrl: imageController.text,
-                    rating: 4.5,
-                    reviewCount: 100,
-                    category: selectedCategory,
-                  );
-                  final provider =
-                      Provider.of<CoffeeProvider>(context, listen: false);
-                  final success = await provider.addCoffee(newCoffee);
-                  if (success) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(tr('coffee_added'))),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(tr('add_failed'))),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6F4E37),
-                foregroundColor: Colors.white,
-              ),
-              child: Text(tr('add')),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _editCoffee(Coffee coffee) {
     final formKey = GlobalKey<FormState>();
@@ -230,8 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: Text(
             tr('edit_coffee'),
             style: const TextStyle(
@@ -314,6 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       prefixIcon:
                           const Icon(Icons.image, color: Color(0xFF6F4E37)),
                     ),
+                    onChanged: (value) {
+                      setDialogState(() {}); // Rebuild to update preview
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return tr('image_required');
@@ -321,9 +142,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 8),
+                  // Image Preview
+                  if (imageController.text.isNotEmpty)
+                    Container(
+                      height: 100,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: imageController.text,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image, color: Colors.red),
+                              Text('Invalid Image URL',
+                                  style: TextStyle(fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                  TextFormField(
+                    initialValue: selectedCategory,
                     decoration: InputDecoration(
                       labelText: tr('category'),
                       border: OutlineInputBorder(
@@ -332,16 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       prefixIcon:
                           const Icon(Icons.category, color: Color(0xFF6F4E37)),
                     ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      );
-                    }).toList(),
                     onChanged: (value) {
-                      setState(() {
-                        selectedCategory = value!;
-                      });
+                      selectedCategory = value;
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -356,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(ctx).pop(),
               child: Text(tr('cancel')),
             ),
             ElevatedButton(
@@ -371,15 +212,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                   final provider =
                       Provider.of<CoffeeProvider>(context, listen: false);
+                  final messenger = ScaffoldMessenger.of(context);
+                  Navigator.of(ctx).pop();
+                  
                   final success =
                       await provider.updateCoffee(coffee.id, updatedCoffee);
                   if (success) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text(tr('coffee_updated'))),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text(tr('update_failed'))),
                     );
                   }
@@ -412,14 +255,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               final provider =
                   Provider.of<CoffeeProvider>(context, listen: false);
-              final success = await provider.deleteCoffee(coffee.id);
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.of(context).pop();
+              
+              final success = await provider.deleteCoffee(coffee.id);
               if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text(tr('coffee_deleted'))),
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text(tr('delete_failed'))),
                 );
               }
@@ -445,6 +290,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (provider.error.isNotEmpty && provider.coffees.isEmpty) {
             return _buildError(provider);
+          }
+
+          // تحديث الأقسام ديناميكياً
+          final uniqueCategories = provider.coffees
+              .map((c) => c.category)
+              .where((cat) => cat.isNotEmpty && cat != 'All Coffee')
+              .toSet()
+              .toList();
+          
+          // ندمج "All Coffee" مع الأقسام القادمة من الداتا
+          final newCategories = ['All Coffee', ...uniqueCategories];
+          
+          // تحديث القائمة إذا كانت مختلفة لتجنب اللوب اللانهائي
+          if (newCategories.length != _categories.length || 
+              !newCategories.every((cat) => _categories.contains(cat))) {
+            Future.delayed(Duration.zero, () {
+              if (mounted) {
+                setState(() {
+                  _categories = newCategories;
+                });
+              }
+            });
           }
 
           final filteredCoffees = _filterCoffees(provider.coffees);
@@ -476,13 +343,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      floatingActionButton: (context.read<AuthCubit>().state.user?.isAdmin ?? false)
-          ? FloatingActionButton(
-              onPressed: _addCoffee,
-              backgroundColor: const Color(0xFF6F4E37),
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 
@@ -528,9 +388,10 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Coffee> filtered = coffees;
 
     if (_selectedCategory > 0) {
-      final category = _categories[_selectedCategory];
-      filtered =
-          filtered.where((coffee) => coffee.category == category).toList();
+      final category = _categories[_selectedCategory].toLowerCase();
+      filtered = filtered
+          .where((coffee) => coffee.category.toLowerCase() == category)
+          .toList();
     }
 
     if (_searchQuery.isNotEmpty) {
@@ -564,46 +425,51 @@ class _HomeScreenState extends State<HomeScreen> {
 
   AppBar _buildAppBar() {
     return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      title: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, state) {
+          final user = state.user;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.location_on, size: 16, color: Color(0xFF6F4E37)),
-              const SizedBox(width: 4),
               Text(
-                tr('location'),
+                '${tr('welcome')}, ${user?.name ?? user?.email?.split('@')[0] ?? tr('user')}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.keyboard_arrow_down, size: 16),
+              const SizedBox(height: 2),
+              Text(
+                'Coffee Shop',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Bitsen, Tanjungbaiu',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
-          ),
-        ],
+          );
+        },
       ),
       actions: [
-        if (context.read<AuthCubit>().state.user?.isAdmin ?? false)
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings, color: Color(0xFF6F4E37)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            if (state.user?.isAdmin ?? false) {
+              return IconButton(
+                icon: const Icon(Icons.admin_panel_settings, color: Color(0xFF6F4E37)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                  );
+                },
               );
-            },
-          ),
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.notifications_none),
-          onPressed: () {},
+          onPressed: () {
+            // Notifications logic here
+          },
         ),
       ],
       bottom: PreferredSize(
@@ -879,26 +745,31 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Price',
-                                    style: TextStyle(
-                                      color: Colors.grey[700],
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Price',
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '\$${coffee.price.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      color: Color(0xFF6F4E37),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        '\$${coffee.price.toStringAsFixed(2)}',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: Color(0xFF6F4E37),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               if (context.read<AuthCubit>().state.user?.isAdmin ?? false)
                                 Row(

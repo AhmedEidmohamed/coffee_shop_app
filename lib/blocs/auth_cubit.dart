@@ -27,7 +27,9 @@ class AuthCubit extends Cubit<AuthState> {
 
   AuthCubit({required BaseAuthRepository authRepository})
       : _authRepository = authRepository,
-        super(AuthState.initial()) {
+        super(authRepository.currentUser != null 
+            ? AuthState.authenticated(authRepository.currentUser!) 
+            : AuthState.initial()) {
     _authSub = _authRepository.authStateChanges.listen((user) {
       if (user != null) {
         emit(AuthState.authenticated(user));
@@ -37,11 +39,11 @@ class AuthCubit extends Cubit<AuthState> {
     });
   }
 
-  Future<void> signUp({required String email, required String password}) async {
+  Future<void> signUp({required String email, required String password, required String name}) async {
     emit(AuthState.loading());
     try {
       final user =
-          await _authRepository.signUp(email: email, password: password);
+          await _authRepository.signUp(email: email, password: password, name: name);
       if (user != null) {
         emit(AuthState.authenticated(user));
       } else {

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../providers/coffee_provider.dart';
 import '../models/coffee_model.dart';
-import 'detail_screen.dart'; // To navigate for editing if needed, or we can use local dialog
+import '../blocs/auth_cubit.dart';
+import 'main_screen.dart';
+import 'login_screen.dart';
+import 'detail_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -20,6 +24,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
     // Reload orders and coffees when entering dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CoffeeProvider>().refreshCoffees();
@@ -37,6 +44,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.storefront, color: Color(0xFF6F4E37)),
+            tooltip: 'View Store',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MainScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            tooltip: 'Logout',
+            onPressed: () {
+              context.read<AuthCubit>().signOut();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: const Color(0xFF6F4E37),
@@ -56,6 +87,217 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           _buildOrdersTab(context),
           _buildProductsTab(context),
         ],
+      ),
+      floatingActionButton: _tabController.index == 2
+          ? FloatingActionButton(
+              onPressed: _addCoffee,
+              backgroundColor: const Color(0xFF6F4E37),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  void _addCoffee() {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final priceController = TextEditingController();
+    final imageController = TextEditingController();
+    String selectedCategory = 'Latte'; // Default category
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(
+            tr('add_coffee'),
+            style: const TextStyle(
+              color: Color(0xFF6F4E37),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: tr('name'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.coffee, color: Color(0xFF6F4E37)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('name_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(
+                      labelText: tr('description'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.description,
+                          color: Color(0xFF6F4E37)),
+                    ),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('description_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: priceController,
+                    decoration: InputDecoration(
+                      labelText: tr('price'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon: const Icon(Icons.attach_money,
+                          color: Color(0xFF6F4E37)),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('price_required');
+                      }
+                      if (double.tryParse(value) == null) {
+                        return tr('invalid_price');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: imageController,
+                    decoration: InputDecoration(
+                      labelText: tr('image_url'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.image, color: Color(0xFF6F4E37)),
+                    ),
+                    onChanged: (value) {
+                      setDialogState(() {}); // Rebuild to update preview
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('image_required');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // Image Preview
+                  if (imageController.text.isNotEmpty)
+                    Container(
+                      height: 100,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: imageController.text,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image, color: Colors.red),
+                              Text('Invalid Image URL',
+                                  style: TextStyle(fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: tr('category'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      prefixIcon:
+                          const Icon(Icons.category, color: Color(0xFF6F4E37)),
+                    ),
+                    onChanged: (value) {
+                      selectedCategory = value;
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return tr('category_required');
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final newCoffee = Coffee(
+                    id: '${DateTime.now().millisecondsSinceEpoch}',
+                    name: nameController.text,
+                    description: descriptionController.text,
+                    price: double.parse(priceController.text),
+                    imageUrl: imageController.text,
+                    rating: 4.5,
+                    reviewCount: 100,
+                    category: selectedCategory,
+                  );
+                  final provider =
+                      Provider.of<CoffeeProvider>(context, listen: false);
+                  final messenger = ScaffoldMessenger.of(context);
+                  Navigator.of(ctx).pop();
+                  
+                  final success = await provider.addCoffee(newCoffee);
+                  if (success) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(tr('coffee_added'))),
+                    );
+                  } else {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(tr('add_failed'))),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6F4E37),
+                foregroundColor: Colors.white,
+              ),
+              child: Text(tr('add')),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -120,15 +362,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: const Color(0xFF6F4E37)),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          ],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: const Color(0xFF6F4E37)),
+              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+              const SizedBox(height: 8),
+              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            ],
+          ),
         ),
       ),
     );

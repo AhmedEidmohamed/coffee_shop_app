@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth_cubit.dart';
 import 'main_screen.dart';
+import 'admin_dashboard_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -12,14 +13,18 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
   bool _isPasswordVisible = false;
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _confirmPassCtrl.dispose();
     super.dispose();
   }
 
@@ -44,12 +49,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: SafeArea(
         child: BlocConsumer<AuthCubit, AuthState>(
           listener: (context, state) {
-            if (state.user != null) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const MainScreen()),
-                (route) => false,
-              );
+            final user = state.user;
+            if (user != null) {
+              if (user.isAdmin) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                  (route) => false,
+                );
+              } else {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MainScreen()),
+                  (route) => false,
+                );
+              }
             } else if (state.error != null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -88,6 +102,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 48),
+                      // Full Name Field
+                      TextFormField(
+                        controller: _nameCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Full Name',
+                          hintText: 'Enter your full name',
+                          prefixIcon: const Icon(Icons.person_outline),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6F4E37),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Please enter your name' : null,
+                      ),
+                      const SizedBox(height: 20),
                       // Email Field
                       TextFormField(
                         controller: _emailCtrl,
@@ -157,6 +199,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         validator: (v) =>
                             (v == null || v.length < 6) ? 'Password must be at least 6 characters' : null,
                       ),
+                      const SizedBox(height: 20),
+                      // Confirm Password Field
+                      TextFormField(
+                        controller: _confirmPassCtrl,
+                        obscureText: !_isPasswordVisible,
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          hintText: 'Repeat your password',
+                          prefixIcon: const Icon(Icons.lock_reset_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6F4E37),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Please confirm your password';
+                          if (v != _passCtrl.text) return 'Passwords do not match';
+                          return null;
+                        },
+                      ),
                       const SizedBox(height: 32),
                       // Create Account Button
                       SizedBox(
@@ -169,6 +243,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     context.read<AuthCubit>().signUp(
                                           email: _emailCtrl.text.trim(),
                                           password: _passCtrl.text.trim(),
+                                          name: _nameCtrl.text.trim(),
                                         );
                                   }
                                 },

@@ -1,4 +1,4 @@
-import 'package:coffee_shop_app/screens/welcome_screen.dart';
+import 'package:coffee_shop_app/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -7,10 +7,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'providers/theme_provider.dart';
 import 'firebase_options.dart';
 import 'repositories/base_auth_repository.dart';
-import 'repositories/fake_auth_repository.dart';
 import 'providers/language_provider.dart';
 import 'providers/coffee_provider.dart';
-import 'providers/profile_provider.dart'; // أضف هذا
+import 'providers/profile_provider.dart';
 import 'repositories/auth_repository.dart';
 import 'blocs/auth_cubit.dart';
 import 'screens/login_screen.dart';
@@ -18,22 +17,18 @@ import 'screens/signup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await EasyLocalization.ensureInitialized();
 
-  // Choose repository depending on whether Firebase is configured.
-  late final BaseAuthRepository authRepository;
-
-  if (firebaseConfigured) {
-    // If `flutterfire configure` was run, this file will export
-    // DefaultFirebaseOptions and set `firebaseConfigured = true`.
+  try {
     await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-    authRepository = AuthRepository();
-  } else {
-    // Fallback to fake repository for quick local testing without Firebase.
-    authRepository = FakeAuthRepository();
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+  } catch (e) {
+    print('Firebase initialization failed: $e');
   }
+  
+  final authRepository = AuthRepository();
 
   runApp(
     EasyLocalization(
@@ -107,7 +102,7 @@ class CoffeeShopApp extends StatelessWidget {
                 '/login': (_) => const LoginScreen(),
                 '/signup': (_) => const SignUpScreen(),
               },
-              home: const WelcomeScreen(),
+              home: const SplashScreen(),
             );
           },
         ),

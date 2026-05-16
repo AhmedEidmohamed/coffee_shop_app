@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/firestore_coffee_service.dart';
 import '../services/firestore_order_service.dart';
@@ -12,6 +13,7 @@ class CoffeeProvider with ChangeNotifier {
   List<Order> _orders = [];
   bool _isLoading = false;
   String _error = '';
+  StreamSubscription? _coffeeSubscription;
 
   // مفاتيح التخزين المحلي
   static const String _ordersKey = 'coffee_shop_orders';
@@ -27,14 +29,37 @@ class CoffeeProvider with ChangeNotifier {
       _coffees.where((coffee) => coffee.isFavorite).toList();
 
   CoffeeProvider() {
-    _loadOrders(); // تحميل الطلبات عند إنشاء المزود
-    // سيتم تحميل المفضلة بعد تحميل القهوة
+    _loadOrders();
+    _listenToCoffees();
+  }
+
+  void _listenToCoffees() {
+    _coffeeSubscription?.cancel();
+    _isLoading = true;
+    _coffeeSubscription = _coffeeService.getCoffeesStream().listen(
+      (coffeesList) async {
+        _coffees = coffeesList;
+        await _loadFavorites();
+        _isLoading = false;
+        _error = '';
+        notifyListeners();
+      },
+      onError: (error) {
+        print('Stream Error: $error');
+        _error = error.toString();
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> loadCoffees() async {
-    _isLoading = true;
+    // Only show loading indicator if list is empty for a faster feel
+    if (_coffees.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
     _error = '';
-    notifyListeners();
 
     try {
       _coffees = await _coffeeService.getCoffees();
@@ -55,17 +80,9 @@ class CoffeeProvider with ChangeNotifier {
 
   // Add method to update a coffee
   Future<bool> updateCoffee(String id, Coffee updatedCoffee) async {
-    _isLoading = true;
-    notifyListeners();
     try {
       final success = await _coffeeService.updateCoffee(id, updatedCoffee);
-      if (success) {
-        final index = _coffees.indexWhere((coffee) => coffee.id == id);
-        if (index != -1) {
-          _coffees[index] = updatedCoffee;
-        }
-        _error = '';
-      } else {
+      if (!success) {
         _error = 'Failed to update coffee';
       }
       return success;
@@ -80,14 +97,9 @@ class CoffeeProvider with ChangeNotifier {
 
   // Add method to delete a coffee
   Future<bool> deleteCoffee(String id) async {
-    _isLoading = true;
-    notifyListeners();
     try {
       final success = await _coffeeService.deleteCoffee(id);
-      if (success) {
-        _coffees.removeWhere((coffee) => coffee.id == id);
-        _error = '';
-      } else {
+      if (!success) {
         _error = 'Failed to delete coffee';
       }
       return success;
@@ -382,24 +394,16 @@ class CoffeeProvider with ChangeNotifier {
   }
 
   Future<bool> addCoffee(Coffee newCoffee) async {
-    _isLoading = true;
-    notifyListeners();
     try {
       final addedCoffee = await _coffeeService.addCoffee(newCoffee);
-      if (addedCoffee != null) {
-        _coffees.add(addedCoffee);
-        _error = '';
-        return true;
-      } else {
+      if (addedCoffee == null) {
         _error = 'Failed to add coffee';
         return false;
       }
+      return true;
     } catch (e) {
       _error = e.toString();
       return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 }

@@ -1,23 +1,41 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/app_user.dart';
 import 'base_auth_repository.dart';
 
 class AuthRepository implements BaseAuthRepository {
   final FirebaseAuth _firebaseAuth;
+  final FirebaseFirestore _firestore;
 
-  AuthRepository({FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+  AuthRepository({FirebaseAuth? firebaseAuth, FirebaseFirestore? firestore})
+      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Stream<AppUser?> get authStateChanges =>
       _firebaseAuth.authStateChanges().map((u) => _fromFirebaseUser(u));
 
   @override
+  AppUser? get currentUser => _fromFirebaseUser(_firebaseAuth.currentUser);
+
+  @override
   Future<AppUser?> signUp(
-      {required String email, required String password}) async {
+      {required String email, required String password, required String name}) async {
     final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email, password: password);
-    return _fromFirebaseUser(userCredential.user);
+    
+    // Set display name on Firebase Auth
+    await userCredential.user?.updateDisplayName(name);
+    
+    // Save user data to Firestore (Bonus requirement)
+    await _firestore.collection('users').doc(userCredential.user?.uid).set({
+      'name': name,
+      'email': email,
+      'role': 'user',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    return _fromFirebaseUser(userCredential.user, name: name);
   }
 
   @override
@@ -33,9 +51,21 @@ class AuthRepository implements BaseAuthRepository {
     await _firebaseAuth.signOut();
   }
 
-  AppUser? _fromFirebaseUser(User? user) {
+  AppUser? _fromFirebaseUser(User? user, {String? name}) {
     if (user == null) return null;
-    final role = (user.email == 'admin@admin.com') ? 'admin' : 'user';
-    return AppUser(id: user.uid, email: user.email, role: role);
+    
+    // الأدمين هو أي شخص لديه هذا الإيميل، وسيتم التحقق من كلمة مروره عبر Firebase Auth الفعلي
+    final isAdminEmail = user.email == 'admin@admin.com' || 
+                         user.email == 'admin@gmail.com' ||
+                         user.email == 'admin@coffee.com';
+    
+    final role = isAdminEmail ? 'admin' : 'user';
+    
+    return AppUser(
+      id: user.uid,
+      email: user.email,
+      name: name ?? user.displayName,
+      role: role,
+    );
   }
 }

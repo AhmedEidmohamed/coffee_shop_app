@@ -14,33 +14,36 @@ class FirestoreCoffeeService {
     }
   }
 
+  Stream<List<Coffee>> getCoffeesStream() {
+    if (_firestore == null) return Stream.value([]);
+    return _firestore!.collection('coffees').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data());
+        data['id'] = doc.id;
+        return Coffee.fromJson(data);
+      }).toList();
+    });
+  }
+
   Future<List<Coffee>> getCoffees() async {
     if (_firestore == null) return [];
     try {
       final snapshot = await _firestore!.collection('coffees').get();
       return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return Coffee(
-          id: doc.id,
-          name: data['name'] ?? 'Coffee',
-          description: data['description'] ?? '',
-          price: (data['price'] as num?)?.toDouble() ?? 0.0,
-          imageUrl: data['imageUrl'] ?? '',
-          rating: (data['rating'] as num?)?.toDouble() ?? 4.5,
-          reviewCount: data['reviewCount'] ?? 0,
-          category: data['category'] ?? 'All Coffee',
-        );
+        final data = Map<String, dynamic>.from(doc.data());
+        data['id'] = doc.id;
+        return Coffee.fromJson(data);
       }).toList();
     } catch (e) {
-      print('Error fetching coffees from Firestore: $e');
-      return [];
+      print('Error getting coffees: $e');
+      rethrow;
     }
   }
 
   Future<Coffee?> addCoffee(Coffee newCoffee) async {
     if (_firestore == null) return null;
     try {
-      final docRef = await _firestore!.collection('coffees').add({
+      final Map<String, dynamic> coffeeData = {
         'name': newCoffee.name,
         'description': newCoffee.description,
         'price': newCoffee.price,
@@ -48,8 +51,9 @@ class FirestoreCoffeeService {
         'rating': newCoffee.rating,
         'reviewCount': newCoffee.reviewCount,
         'category': newCoffee.category,
-      });
-
+      };
+      
+      final docRef = await _firestore!.collection('coffees').add(coffeeData);
       return newCoffee.copyWith(id: docRef.id);
     } catch (e) {
       print('Error adding coffee to Firestore: $e');
