@@ -21,14 +21,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _navigateToNext() async {
     // Wait for 2 seconds for a smooth splash experience
-    await Future.delayed(const Duration(seconds: 2));
-    
+    await Future.delayed(const Duration(seconds: 3));
+
     if (!mounted) return;
 
     // We check the latest state from the Cubit
     final state = context.read<AuthCubit>().state;
     final user = state.user;
-    
+
     if (user != null) {
       if (user.isAdmin) {
         Navigator.pushReplacement(
